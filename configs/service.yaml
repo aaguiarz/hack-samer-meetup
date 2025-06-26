@@ -14,8 +14,8 @@ openfga:
   # For client_credentials:
   # client_id: ""
   # client_secret: ""
-  # audience: ""
-  # issuer: ""
+  # audience: "https://your-openfga-api.com"     # Optional: OAuth2 audience
+  # issuer: "https://your-auth-provider.com"    # Optional: Token issuer URL
   # For shared_secret:
   # shared_secret: ""
 

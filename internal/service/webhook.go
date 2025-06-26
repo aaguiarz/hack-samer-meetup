@@ -29,10 +29,10 @@ type WebhookService struct {
 	router        *mux.Router
 	mappingEngine *engine.MappingEngine
 	fgaClient     *client.OpenFgaClient
-	
+
 	// Loaded mapping configurations
-	userConfig     *types.MappingConfig
-	orgConfig      *types.MappingConfig
+	userConfig      *types.MappingConfig
+	orgConfig       *types.MappingConfig
 	orgMemberConfig *types.MappingConfig
 	orgRoleConfig   *types.MappingConfig
 }
@@ -89,8 +89,10 @@ func (s *WebhookService) initOpenFGAClient() error {
 			Config: &credentials.Config{
 				ClientCredentialsClientId:     s.cfg.OpenFGA.ClientID,
 				ClientCredentialsClientSecret: s.cfg.OpenFGA.ClientSecret,
-				ClientCredentialsScopes:       "read write",
 			},
+		}
+		if s.cfg.OpenFGA.Audience != "" {
+			configuration.Credentials.Config.ClientCredentialsApiAudience = s.cfg.OpenFGA.Audience
 		}
 		if s.cfg.OpenFGA.Issuer != "" {
 			configuration.Credentials.Config.ClientCredentialsApiTokenIssuer = s.cfg.OpenFGA.Issuer
@@ -297,12 +299,12 @@ func (s *WebhookService) processEvent(ctx context.Context, event map[string]inte
 func (s *WebhookService) loggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
-		
+
 		// Create a response writer wrapper to capture status code
 		wrapped := &responseWriter{ResponseWriter: w, statusCode: http.StatusOK}
-		
+
 		next.ServeHTTP(wrapped, r)
-		
+
 		log.Printf("%s %s %d %v", r.Method, r.URL.Path, wrapped.statusCode, time.Since(start))
 	})
 }

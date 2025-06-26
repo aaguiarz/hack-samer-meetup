@@ -32,6 +32,8 @@ export OPENFGA_AUTH_METHOD="none"  # or "client_credentials" or "shared_secret"
 # For client credentials authentication:
 # export OPENFGA_CLIENT_ID="your-client-id"
 # export OPENFGA_CLIENT_SECRET="your-client-secret"
+# export OPENFGA_AUDIENCE="https://your-openfga-api.com"
+# export OPENFGA_ISSUER="https://your-auth-provider.com"
 
 # For shared secret authentication:
 # export OPENFGA_SHARED_SECRET="your-shared-secret"
@@ -66,6 +68,8 @@ The service will start on `http://localhost:8080` by default.
 | `OPENFGA_AUTH_METHOD` | Authentication method | `none` | No |
 | `OPENFGA_CLIENT_ID` | Client ID for client credentials | - | If using client_credentials |
 | `OPENFGA_CLIENT_SECRET` | Client secret for client credentials | - | If using client_credentials |
+| `OPENFGA_AUDIENCE` | Audience for client credentials token | - | If using client_credentials |
+| `OPENFGA_ISSUER` | Token issuer URL for client credentials | - | If using client_credentials |
 | `OPENFGA_SHARED_SECRET` | Shared secret for API token auth | - | If using shared_secret |
 | `AUTH0_WEBHOOK_SECRET` | Auth0 webhook secret for signature verification | - | Recommended |
 | `AUTH0_VERIFY_SIGNATURE` | Enable signature verification | `true` | No |
@@ -82,7 +86,13 @@ export OPENFGA_AUTH_METHOD="none"
 export OPENFGA_AUTH_METHOD="client_credentials"
 export OPENFGA_CLIENT_ID="your-client-id"
 export OPENFGA_CLIENT_SECRET="your-client-secret"
+export OPENFGA_AUDIENCE="https://your-openfga-api.com"      # Optional
+export OPENFGA_ISSUER="https://your-auth-provider.com"     # Optional
 ```
+
+**Configuration Notes:**
+- `OPENFGA_AUDIENCE`: The intended audience for the OAuth2 token. This should match the identifier of your OpenFGA API resource server.
+- `OPENFGA_ISSUER`: The URL of the authorization server that will issue the tokens. Required if your OAuth2 provider uses a non-standard issuer URL.
 
 #### Shared Secret (API Token)
 ```bash
@@ -133,6 +143,127 @@ Receives Auth0 webhook events. Expects JSON payload with Auth0 event structure.
   "timestamp": "2023-06-26T12:00:00Z",
   "event_type": "user.created"
 }
+```
+
+## Testing with curl
+
+Here are examples of how to send Auth0 events to the webhook using curl:
+
+### User Created Event
+```bash
+curl -X POST http://localhost:8080/webhook/auth0 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "type": "user.created",
+    "data": {
+      "object": {
+        "user_id": "auth0|user123",
+        "email": "user@example.com",
+        "email_verified": true,
+        "phone_verified": false
+      }
+    }
+  }'
+```
+
+### Organization Created Event
+```bash
+curl -X POST http://localhost:8080/webhook/auth0 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "type": "organization.created",
+    "data": {
+      "object": {
+        "id": "org_abc123",
+        "name": "Example Corp",
+        "metadata": {
+          "external_org_id": "ext-org-456",
+          "tier": "enterprise"
+        }
+      }
+    }
+  }'
+```
+
+### Organization Member Added Event
+```bash
+curl -X POST http://localhost:8080/webhook/auth0 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "type": "organization.member.added",
+    "data": {
+      "object": {
+        "user": {
+          "user_id": "auth0|user123"
+        },
+        "organization": {
+          "id": "org_abc123"
+        }
+      }
+    }
+  }'
+```
+
+### Role Assignment Event
+```bash
+curl -X POST http://localhost:8080/webhook/auth0 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "type": "organization.member.role.assigned",
+    "data": {
+      "object": {
+        "user": {
+          "user_id": "auth0|user123"
+        },
+        "organization": {
+          "id": "org_abc123"
+        },
+        "role": {
+          "id": "admin"
+        }
+      }
+    }
+  }'
+```
+
+### Testing with Signature Verification
+
+If you have signature verification enabled, you need to include the `X-Hub-Signature-256` header:
+
+```bash
+# First, generate the signature (example using openssl)
+PAYLOAD='{"type":"user.created","data":{"object":{"user_id":"auth0|user123"}}}'
+SECRET="your-webhook-secret"
+SIGNATURE=$(echo -n "$PAYLOAD" | openssl dgst -sha256 -hmac "$SECRET" -binary | xxd -p -c 256)
+
+# Then send the request with the signature
+curl -X POST http://localhost:8080/webhook/auth0 \
+  -H "Content-Type: application/json" \
+  -H "X-Hub-Signature-256: sha256=$SIGNATURE" \
+  -d "$PAYLOAD"
+```
+
+### Expected Responses
+
+**Success Response:**
+```json
+{
+  "status": "processed",
+  "timestamp": "2025-06-26T12:00:00Z",
+  "event_type": "user.created"
+}
+```
+
+**Error Response (Invalid JSON):**
+```
+HTTP 400 Bad Request
+Invalid JSON
+```
+
+**Error Response (Missing Event Type):**
+```
+HTTP 500 Internal Server Error
+Failed to process event
 ```
 
 ## Docker Deployment
@@ -293,4 +424,47 @@ go test -v ./internal/engine/ -run "TestIntegration_"
 Enable verbose logging by setting log level:
 ```bash
 export LOG_LEVEL=debug
+```
+
+## Production Configuration Examples
+
+### Complete Auth0 + OpenFGA Cloud Setup
+```bash
+# Server Configuration
+export PORT="8080"
+export HOST="0.0.0.0"
+
+# OpenFGA Cloud Configuration
+export OPENFGA_API_URL="https://api.us1.fga.dev"
+export OPENFGA_STORE_ID="01HXYZ123456789ABCDEF"
+export OPENFGA_AUTH_METHOD="client_credentials"
+export OPENFGA_CLIENT_ID="your-openfga-client-id"
+export OPENFGA_CLIENT_SECRET="your-openfga-client-secret"
+export OPENFGA_AUDIENCE="https://api.us1.fga.dev"
+export OPENFGA_ISSUER="https://auth.us1.fga.dev"
+
+# Auth0 Configuration
+export AUTH0_WEBHOOK_SECRET="your-strong-webhook-secret"
+export AUTH0_VERIFY_SIGNATURE="true"
+
+# Start the service
+./webhook-service
+```
+
+### Self-Hosted OpenFGA with OAuth2
+```bash
+# OpenFGA Self-Hosted with OAuth2
+export OPENFGA_API_URL="https://openfga.yourcompany.com"
+export OPENFGA_STORE_ID="your-store-id"
+export OPENFGA_AUTH_METHOD="client_credentials"
+export OPENFGA_CLIENT_ID="webhook-service"
+export OPENFGA_CLIENT_SECRET="your-oauth2-client-secret"
+export OPENFGA_AUDIENCE="https://openfga.yourcompany.com"
+export OPENFGA_ISSUER="https://auth.yourcompany.com"
+
+# Auth0 Configuration
+export AUTH0_WEBHOOK_SECRET="your-webhook-secret"
+
+# Start the service
+./webhook-service
 ```
