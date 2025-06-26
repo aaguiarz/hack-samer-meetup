@@ -1,0 +1,44 @@
+# Mappings for User Events
+events:
+  - type: user.created
+    action: create
+  - type: user.updated
+    action: update
+  - type: user.deleted
+    action: delete
+
+mappings:
+  # Map if email is verified
+  - condition: "data.object.email_verified == true"
+    tuple:
+      user: "user:{{ .data.object.user_id }}"
+      relation: "email_verified"
+      object: "user:{{ .data.object.user_id }}"
+
+  # Map if phone is verified
+  - condition: "data.object.phone_verified == true"
+    tuple:
+      user: "user:{{ .data.object.user_id }}"
+      relation: "phone_verified"
+      object: "user:{{ .data.object.user_id }}"
+
+  # Map if user is blocked
+  - condition: "data.object.blocked == true"
+    tuple:
+      user: "user:{{ .data.object.user_id }}"
+      relation: "blocked"
+      object: "user:{{ .data.object.user_id }}"
+
+  # Map manager from app_metadata
+  - condition: "data.object.app_metadata != nil && data.object.app_metadata.manager != nil"
+    tuple:
+      user: "user:{{ .data.object.user_id }}"
+      relation: "manager"
+      object: "user:{{ .data.object.app_metadata.manager }}"
+
+  # Map manager from user_metadata
+  - condition: "data.object.user_metadata != nil && data.object.user_metadata.manager_id != nil"
+    tuple:
+      user: "user:{{ .data.object.user_id }}"
+      relation: "manager"
+      object: "user:{{ .data.object.user_metadata.manager_id }}"

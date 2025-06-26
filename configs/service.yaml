@@ -1,0 +1,30 @@
+# Webhook Service Configuration Example
+server:
+  port: 8080
+  host: "0.0.0.0"
+  read_timeout: "10s"
+  write_timeout: "10s"
+  idle_timeout: "120s"
+
+openfga:
+  api_url: "http://localhost:8080"
+  store_id: ""  # Set via environment variable OPENFGA_STORE_ID
+  model_file: "configs/model.json"
+  auth_method: "none"  # Options: none, client_credentials, shared_secret
+  # For client_credentials:
+  # client_id: ""
+  # client_secret: ""
+  # audience: ""
+  # issuer: ""
+  # For shared_secret:
+  # shared_secret: ""
+
+auth0:
+  webhook_secret: ""  # Set via environment variable AUTH0_WEBHOOK_SECRET
+  verify_signature: true
+
+mappings:
+  user_mappings: "configs/user-mappings.yaml"
+  org_mappings: "configs/organization-mappings.yaml"
+  org_member_mappings: "configs/organization-member-mappings.yaml"
+  org_role_mappings: "configs/organization-role-mappings.yaml"

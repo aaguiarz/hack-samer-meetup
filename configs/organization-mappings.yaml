@@ -1,0 +1,23 @@
+# Mappings for Organization Events
+events:
+  - type: organization.created
+    action: create
+  - type: organization.updated
+    action: update
+  - type: organization.deleted
+    action: delete
+
+mappings:
+  # Map organization external_org_id from metadata
+  - condition: "data.object.metadata != nil && data.object.metadata.external_org_id != nil"
+    tuple:
+      user: "external_org:{{ .data.object.metadata.external_org_id }}"
+      relation: "external_org"
+      object: "organization:{{ .data.object.id }}"
+
+  # Map organization tier from metadata
+  - condition: "data.object.metadata != nil && data.object.metadata.tier != nil"
+    tuple:
+      user: "organization:{{ .data.object.id }}"
+      relation: "has_tier"
+      object: "tier:{{ .data.object.metadata.tier }}"

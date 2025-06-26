@@ -1,0 +1,13 @@
+# Mappings for Organization Member Events
+events:
+  - type: organization.member.added
+    action: create
+  - type: organization.member.deleted
+    action: delete
+
+mappings:
+  # When a member is added/deleted, create/delete the 'member' relation
+  - tuple:
+      user: "user:{{ .data.object.user.user_id }}"
+      relation: "member"
+      object: "organization:{{ .data.object.organization.id }}"

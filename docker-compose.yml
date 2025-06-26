@@ -1,0 +1,77 @@
+version: '3.8'
+
+services:
+  # OpenFGA server
+  openfga:
+    image: openfga/openfga:latest
+    container_name: openfga-server
+    command: run --playground-enabled=false
+    ports:
+      - "8080:8080"  # HTTP API
+      - "8081:8081"  # gRPC API
+      - "3000:3000"  # Playground (disabled)
+    environment:
+      - OPENFGA_DATASTORE_ENGINE=memory
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--spider", "http://localhost:8080/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    volumes:
+      - openfga_data:/data
+
+  # Mapping Engine (when running as a service)
+  mapping-engine:
+    build: .
+    container_name: mapping-engine-service
+    depends_on:
+      openfga:
+        condition: service_healthy
+    environment:
+      - OPENFGA_API_URL=http://openfga:8080
+      - OPENFGA_STORE_ID=${OPENFGA_STORE_ID:-test-store}
+      - OPENFGA_MODEL_ID=${OPENFGA_MODEL_ID:-test-model}
+    volumes:
+      - ./configs:/app/configs:ro
+    profiles:
+      - service  # Only start when explicitly requested
+
+  # PostgreSQL for persistent OpenFGA storage (alternative to memory)
+  postgres:
+    image: postgres:15-alpine
+    container_name: openfga-postgres
+    environment:
+      POSTGRES_DB: openfga
+      POSTGRES_USER: openfga
+      POSTGRES_PASSWORD: openfga_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    profiles:
+      - postgres  # Only start when explicitly requested
+
+  # OpenFGA with PostgreSQL backend
+  openfga-postgres:
+    image: openfga/openfga:latest
+    container_name: openfga-postgres-server
+    command: run --playground-enabled=false
+    ports:
+      - "8082:8080"  # Different port to avoid conflicts
+      - "8083:8081"
+    environment:
+      - OPENFGA_DATASTORE_ENGINE=postgres
+      - OPENFGA_DATASTORE_URI=postgres://openfga:openfga_password@postgres:5432/openfga?sslmode=disable
+    depends_on:
+      - postgres
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--spider", "http://localhost:8080/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    profiles:
+      - postgres
+
+volumes:
+  openfga_data:
+  postgres_data:

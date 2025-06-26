@@ -1,0 +1,13 @@
+# Mappings for Organization Member Role Events
+events:
+  - type: organization.member.role.assigned
+    action: create
+  - type: organization.member.role.deleted
+    action: delete
+
+mappings:
+  # When a role is assigned/deleted, create/delete the 'role' relation for the member within the organization
+  - tuple:
+      user: "user:{{ .data.object.user.user_id }}"
+      relation: "is_role"
+      object: "role:{{ .data.object.role.id }}|organization|{{ .data.object.organization.id }}"

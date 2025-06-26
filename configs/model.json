@@ -1,0 +1,124 @@
+{
+    "schema_version": "1.1",
+    "type_definitions": [
+        {
+            "metadata": {
+                "relations": {
+                    "blocked": {
+                        "directly_related_user_types": [
+                            {
+                                "type": "user"
+                            }
+                        ]
+                    },
+                    "email_verified": {
+                        "directly_related_user_types": [
+                            {
+                                "type": "user"
+                            }
+                        ]
+                    },
+                    "manager": {
+                        "directly_related_user_types": [
+                            {
+                                "type": "user"
+                            }
+                        ]
+                    },
+                    "phone_verified": {
+                        "directly_related_user_types": [
+                            {
+                                "type": "user"
+                            }
+                        ]
+                    }
+                }
+            },
+            "relations": {
+                "blocked": {
+                    "this": {}
+                },
+                "email_verified": {
+                    "this": {}
+                },
+                "manager": {
+                    "this": {}
+                },
+                "phone_verified": {
+                    "this": {}
+                }
+            },
+            "type": "user"
+        },
+        {
+            "type": "external_org"
+        },
+        {
+            "metadata": {
+                "relations": {
+                    "external_org": {
+                        "directly_related_user_types": [
+                            {
+                                "type": "external_org"
+                            }
+                        ]
+                    },
+                    "member": {
+                        "directly_related_user_types": [
+                            {
+                                "type": "user"
+                            }
+                        ]
+                    }
+                }
+            },
+            "relations": {
+                "external_org": {
+                    "this": {}
+                },
+                "member": {
+                    "this": {}
+                }
+            },
+            "type": "organization"
+        },
+        {
+            "metadata": {
+                "relations": {
+                    "is_role": {
+                        "directly_related_user_types": [
+                            {
+                                "type": "user"
+                            }
+                        ]
+                    }
+                }
+            },
+            "relations": {
+                "is_role": {
+                    "this": {}
+                }
+            },
+            "type": "role"
+        },
+        {
+            "metadata": {
+                "relations": {
+                    "has_tier": {
+                        "directly_related_user_types": [
+                            {
+                                "type": "organization"
+                            }
+                        ]
+                    }
+                }
+            },
+            "relations": {
+                "has_tier": {
+                    "this": {}
+                }
+            },
+            "type": "tier"
+        }
+    ]
+}
