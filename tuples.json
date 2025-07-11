@@ -1,0 +1,22 @@
+[
+  {
+    "object":"user:auth0|user123",
+    "relation":"email_verified",
+    "user":"user:auth0|user123"
+  },
+  {
+    "object":"tier:enterprise",
+    "relation":"has_tier",
+    "user":"organization:org_12345"
+  },
+  {
+    "object":"user:auth0|user123",
+    "relation":"phone_verified",
+    "user":"user:auth0|user123"
+  },
+  {
+    "object":"role:admin|organization|org_12345",
+    "relation":"is_role",
+    "user":"user:auth0|user123"
+  }
+]

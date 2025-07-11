@@ -25,6 +25,7 @@ echo "🔍 Demo 1: Basic event processing with dry-run mode"
 echo "---------------------------------------------------"
 echo "Processing simple events with verbose output..."
 echo ""
+./bin/event-processor -events examples/sample-events.json -verbose
 ./bin/event-processor -events examples/sample-events.json -dry-run -verbose
 echo ""
 

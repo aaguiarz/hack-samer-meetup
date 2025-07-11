@@ -1,0 +1,33 @@
+[
+  {
+    "type": "user.created",
+    "data": {
+      "object": {
+        "user_id": "auth0|user123",
+        "email": "user@example.com",
+        "name": "Test User",
+        "email_verified": true,
+        "phone_verified": false,
+        "blocked": false,
+        "app_metadata": {
+          "manager": "auth0|manager123"
+        }
+      }
+    },
+    "created_at": "2024-01-15T10:00:00Z"
+  },
+  {
+    "type": "user.updated",
+    "data": {
+      "object": {
+        "user_id": "auth0|user123",
+        "email": "user@example.com",
+        "name": "Test User Updated",
+        "email_verified": false,
+        "phone_verified": true,
+        "blocked": true
+      }
+    },
+    "created_at": "2024-01-15T11:00:00Z"
+  }
+]
