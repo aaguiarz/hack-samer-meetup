@@ -10,4 +10,4 @@ mappings:
   - tuple:
       user: "user:{{ .data.object.user.user_id }}"
       relation: "is_role"
-      object: "role:{{ .data.object.role.id }}|organization|{{ .data.object.organization.id }}"
+      object: "role:{{ .data.object.role.name }}|organization|{{ .data.object.organization.id }}"

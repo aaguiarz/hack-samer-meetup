@@ -1,0 +1,4 @@
+- The tuples are read with Read all tuples
+- Events do not consider conditions
+- Map role names to static relations
+- Create a CLI that gets a .json with events, processes them, and outputs the tuples it's going to write and delete

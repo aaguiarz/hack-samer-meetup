@@ -11,6 +11,72 @@ A Go-based mapping engine that processes Auth0 events and maps them to OpenFGA t
 - **Multi-Config Support**: Process events against multiple mapping configurations
 - **Comprehensive Testing**: Full test coverage with testcontainers for integration testing
 
+## Tools
+
+This project provides multiple tools for different use cases:
+
+### 1. Event Processor CLI
+A command-line tool for batch processing Auth0 events from JSON files.
+
+**Features:**
+- Process Auth0 events from JSON files
+- Dry-run mode to preview changes
+- Detailed output showing tuple operations
+- Support for multiple authentication methods
+- Comprehensive error reporting
+
+**Quick Start:**
+```bash
+# Build the CLI
+go build -o bin/event-processor cmd/event-processor/main.go
+
+# Process events in dry-run mode
+./bin/event-processor -events examples/sample-events.json -dry-run -verbose
+
+# Process events for real
+./bin/event-processor -events examples/sample-events.json -store-id <store-id>
+```
+
+**Documentation:** [CLI Documentation](README-cli.md)
+
+### 2. Webhook Service
+A HTTP service that receives Auth0 webhooks and processes them in real-time.
+
+**Features:**
+- Real-time event processing via webhooks
+- Signature verification for security
+- Health check endpoints
+- Configurable OpenFGA authentication
+- Docker support
+
+**Quick Start:**
+```bash
+# Build the webhook service
+go build -o bin/webhook-service cmd/webhook-service/main.go
+
+# Run the service
+./bin/webhook-service -config configs/service.yaml
+```
+
+**Documentation:** [Webhook Service Documentation](README-webhook.md)
+
+### 3. Mapping Engine Library
+A Go library for programmatic event processing.
+
+**Features:**
+- Direct integration into Go applications
+- Event processing with detailed results
+- Support for custom OpenFGA clients
+- Comprehensive error handling
+
+**Example:**
+```go
+engine := engine.NewMappingEngine(apiURL, storeID, modelID)
+result, err := engine.ProcessEventWithDetails(ctx, event, config)
+```
+
+**Documentation:** [Library Examples](examples/complete_example.go)
+
 ## Architecture
 
 ### Core Components

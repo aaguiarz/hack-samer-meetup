@@ -17,6 +17,22 @@ type MappingEngine struct {
 	fgaClient *client.OpenFgaClient
 	storeID   string
 	modelID   string
+	isDryRun  bool // Added for mock mode
+}
+
+// MockMappingEngine is a dry-run version that doesn't make actual API calls
+type MockMappingEngine struct {
+	*MappingEngine
+}
+
+// NewMockMappingEngine creates a new mock mapping engine for dry-run mode
+func NewMockMappingEngine(storeID, modelID string) *MappingEngine {
+	return &MappingEngine{
+		fgaClient: nil, // No actual client for dry-run
+		storeID:   storeID,
+		modelID:   modelID,
+		isDryRun:  true,
+	}
 }
 
 // NewMappingEngine creates a new mapping engine instance
@@ -26,13 +42,14 @@ func NewMappingEngine(apiURL, storeID, modelID string) *MappingEngine {
 		StoreId:              storeID,
 		AuthorizationModelId: modelID,
 	}
-	
+
 	fgaClient, _ := client.NewSdkClient(configuration)
-	
+
 	return &MappingEngine{
 		fgaClient: fgaClient,
 		storeID:   storeID,
 		modelID:   modelID,
+		isDryRun:  false,
 	}
 }
 
@@ -42,7 +59,109 @@ func NewMappingEngineWithClient(fgaClient *client.OpenFgaClient, storeID, modelF
 		fgaClient: fgaClient,
 		storeID:   storeID,
 		modelID:   modelFile,
+		isDryRun:  false,
 	}
+}
+
+// ProcessEventResult contains the result of processing an event
+type ProcessEventResult struct {
+	TuplesAdded   []types.ProcessedTuple
+	TuplesDeleted []types.ProcessedTuple
+	Action        string
+	EventType     string
+}
+
+// ProcessEventWithDetails processes an event and returns detailed information about the operations
+func (me *MappingEngine) ProcessEventWithDetails(ctx context.Context, event map[string]interface{}, config *types.MappingConfig) (*ProcessEventResult, error) {
+	eventType, ok := event["type"].(string)
+	if !ok {
+		return nil, fmt.Errorf("event type not found or not a string")
+	}
+
+	// Find the action for this event type
+	var action string
+	for _, eventMapping := range config.Events {
+		if eventMapping.Type == eventType {
+			action = eventMapping.Action
+			break
+		}
+	}
+
+	if action == "" {
+		return nil, fmt.Errorf("no action found for event type: %s", eventType)
+	}
+
+	result := &ProcessEventResult{
+		Action:    action,
+		EventType: eventType,
+	}
+
+	// Process mappings based on action
+	switch action {
+	case "create":
+		tuples, err := me.evaluateMappings(event, config.Mappings)
+		if err != nil {
+			return nil, fmt.Errorf("failed to evaluate mappings: %w", err)
+		}
+		result.TuplesAdded = tuples
+		if !me.isDryRun {
+			err = me.processCreateEvent(ctx, event, config)
+			if err != nil {
+				return nil, err
+			}
+		}
+	case "update":
+		if me.isDryRun {
+			// For dry-run, just evaluate mappings
+			tuples, err := me.evaluateMappings(event, config.Mappings)
+			if err != nil {
+				return nil, fmt.Errorf("failed to evaluate mappings: %w", err)
+			}
+			result.TuplesAdded = tuples
+		} else {
+			// For real update, we need to calculate changes
+			newTuples, err := me.evaluateMappings(event, config.Mappings)
+			if err != nil {
+				return nil, fmt.Errorf("failed to evaluate mappings: %w", err)
+			}
+
+			// Get existing tuples
+			entityID, err := me.extractUserID(event)
+			if err != nil {
+				return nil, fmt.Errorf("failed to extract entity ID: %w", err)
+			}
+
+			existingTuples, err := me.readExistingTuples(ctx, entityID)
+			if err != nil {
+				return nil, fmt.Errorf("failed to read existing tuples: %w", err)
+			}
+
+			tuplesToAdd, tuplesToDelete := me.calculateTupleChanges(existingTuples, newTuples)
+			result.TuplesAdded = tuplesToAdd
+			result.TuplesDeleted = tuplesToDelete
+
+			err = me.processUpdateEvent(ctx, event, config)
+			if err != nil {
+				return nil, err
+			}
+		}
+	case "delete":
+		tuples, err := me.evaluateMappings(event, config.Mappings)
+		if err != nil {
+			return nil, fmt.Errorf("failed to evaluate mappings: %w", err)
+		}
+		result.TuplesDeleted = tuples
+		if !me.isDryRun {
+			err = me.processDeleteEvent(ctx, event, config)
+			if err != nil {
+				return nil, err
+			}
+		}
+	default:
+		return nil, fmt.Errorf("unknown action: %s", action)
+	}
+
+	return result, nil
 }
 
 // ProcessEvent processes an Auth0 event according to the mapping configuration
@@ -108,6 +227,12 @@ func (me *MappingEngine) processCreateEvent(ctx context.Context, event map[strin
 		StoreId: &me.storeID,
 	}
 
+	if me.isDryRun {
+		// In dry-run mode, just log the action
+		fmt.Printf("Dry-run: create tuples %v\n", fgaTuples)
+		return nil
+	}
+
 	_, err = me.fgaClient.Write(ctx).Body(body).Options(options).Execute()
 	if err != nil {
 		return fmt.Errorf("failed to write tuples to OpenFGA: %w", err)
@@ -170,6 +295,12 @@ func (me *MappingEngine) processUpdateEvent(ctx context.Context, event map[strin
 			StoreId: &me.storeID,
 		}
 
+		if me.isDryRun {
+			// In dry-run mode, just log the action
+			fmt.Printf("Dry-run: update tuples, add: %v, delete: %v\n", body.Writes, body.Deletes)
+			return nil
+		}
+
 		_, err = me.fgaClient.Write(ctx).Body(body).Options(options).Execute()
 		if err != nil {
 			return fmt.Errorf("failed to update tuples in OpenFGA: %w", err)
@@ -205,6 +336,12 @@ func (me *MappingEngine) processDeleteEvent(ctx context.Context, event map[strin
 
 		options := client.ClientWriteOptions{
 			StoreId: &me.storeID,
+		}
+
+		if me.isDryRun {
+			// In dry-run mode, just log the action
+			fmt.Printf("Dry-run: delete tuples %v\n", fgaTuples)
+			return nil
 		}
 
 		_, err = me.fgaClient.Write(ctx).Body(body).Options(options).Execute()
@@ -250,12 +387,24 @@ func (me *MappingEngine) processDeleteEvent(ctx context.Context, event map[strin
 		StoreId: &me.storeID,
 	}
 
+	if me.isDryRun {
+		// In dry-run mode, just log the action
+		fmt.Printf("Dry-run: delete all tuples for entity %s\n", userID)
+		return nil
+	}
+
 	_, err = me.fgaClient.Write(ctx).Body(body).Options(options).Execute()
 	if err != nil {
 		return fmt.Errorf("failed to delete tuples from OpenFGA: %w", err)
 	}
 
 	return nil
+}
+
+// EvaluateMappings evaluates all mapping conditions and returns the resulting tuples
+// This is a public method that exposes the internal evaluateMappings functionality
+func (me *MappingEngine) EvaluateMappings(event map[string]interface{}, mappings []types.TupleMapping) ([]types.ProcessedTuple, error) {
+	return me.evaluateMappings(event, mappings)
 }
 
 // evaluateMappings evaluates all mapping conditions and returns the resulting tuples
@@ -362,7 +511,7 @@ func (me *MappingEngine) extractUserID(event map[string]interface{}) (string, er
 		return userID, nil
 	}
 
-	// Try id field (for organization events)  
+	// Try id field (for organization events)
 	if id, ok := object["id"].(string); ok {
 		return id, nil
 	}
@@ -394,7 +543,7 @@ func (me *MappingEngine) readExistingTuples(ctx context.Context, entityID string
 	var tuples []types.ProcessedTuple
 	userKey := fmt.Sprintf("user:%s", entityID)
 	orgKey := fmt.Sprintf("organization:%s", entityID)
-	
+
 	for _, tuple := range response.Tuples {
 		if tuple.Key.User == userKey || tuple.Key.User == orgKey || tuple.Key.Object == orgKey {
 			tuples = append(tuples, types.ProcessedTuple{

@@ -1,0 +1,197 @@
+[
+  {
+    "type": "user.created",
+    "data": {
+      "object": {
+        "user_id": "auth0|alice001",
+        "email": "alice@acme.com",
+        "name": "Alice Johnson",
+        "email_verified": true,
+        "phone_verified": false,
+        "blocked": false,
+        "app_metadata": {
+          "roles": ["employee"]
+        }
+      }
+    },
+    "created_at": "2024-01-15T09:00:00Z"
+  },
+  {
+    "type": "user.created",
+    "data": {
+      "object": {
+        "user_id": "auth0|bob002",
+        "email": "bob@acme.com",
+        "name": "Bob Smith",
+        "email_verified": true,
+        "phone_verified": true,
+        "blocked": false,
+        "app_metadata": {
+          "roles": ["employee", "manager"]
+        }
+      }
+    },
+    "created_at": "2024-01-15T09:15:00Z"
+  },
+  {
+    "type": "organization.created",
+    "data": {
+      "object": {
+        "id": "org_acme",
+        "name": "Acme Corporation",
+        "metadata": {
+          "tier": "enterprise",
+          "region": "us-east"
+        }
+      }
+    },
+    "created_at": "2024-01-15T10:00:00Z"
+  },
+  {
+    "type": "organization.created",
+    "data": {
+      "object": {
+        "id": "org_startup",
+        "name": "Startup Inc",
+        "metadata": {
+          "tier": "basic",
+          "region": "us-west"
+        }
+      }
+    },
+    "created_at": "2024-01-15T10:30:00Z"
+  },
+  {
+    "type": "organization.member.added",
+    "data": {
+      "object": {
+        "organization": {
+          "id": "org_acme",
+          "name": "Acme Corporation"
+        },
+        "user": {
+          "user_id": "auth0|alice001",
+          "email": "alice@acme.com"
+        },
+        "roles": ["member"]
+      }
+    },
+    "created_at": "2024-01-15T11:00:00Z"
+  },
+  {
+    "type": "organization.member.added",
+    "data": {
+      "object": {
+        "organization": {
+          "id": "org_acme",
+          "name": "Acme Corporation"
+        },
+        "user": {
+          "user_id": "auth0|bob002",
+          "email": "bob@acme.com"
+        },
+        "roles": ["member"]
+      }
+    },
+    "created_at": "2024-01-15T11:15:00Z"
+  },
+  {
+    "type": "organization.member.role.assigned",
+    "data": {
+      "object": {
+        "organization": {
+          "id": "org_acme"
+        },
+        "user": {
+          "user_id": "auth0|bob002"
+        },
+        "role": {
+          "name": "manager"
+        }
+      }
+    },
+    "created_at": "2024-01-15T11:30:00Z"
+  },
+  {
+    "type": "organization.member.role.assigned",
+    "data": {
+      "object": {
+        "organization": {
+          "id": "org_acme"
+        },
+        "user": {
+          "user_id": "auth0|alice001"
+        },
+        "role": {
+          "name": "developer"
+        }
+      }
+    },
+    "created_at": "2024-01-15T11:45:00Z"
+  },
+  {
+    "type": "user.updated",
+    "data": {
+      "object": {
+        "user_id": "auth0|alice001",
+        "email": "alice.johnson@acme.com",
+        "name": "Alice Johnson",
+        "email_verified": true,
+        "phone_verified": true,
+        "blocked": false,
+        "app_metadata": {
+          "roles": ["employee", "senior"]
+        }
+      }
+    },
+    "created_at": "2024-01-15T12:00:00Z"
+  },
+  {
+    "type": "user.updated",
+    "data": {
+      "object": {
+        "user_id": "auth0|bob002",
+        "email": "bob@acme.com",
+        "name": "Bob Smith",
+        "email_verified": true,
+        "phone_verified": true,
+        "blocked": true,
+        "app_metadata": {
+          "roles": ["employee", "manager"]
+        }
+      }
+    },
+    "created_at": "2024-01-15T14:00:00Z"
+  },
+  {
+    "type": "organization.member.role.deleted",
+    "data": {
+      "object": {
+        "organization": {
+          "id": "org_acme"
+        },
+        "user": {
+          "user_id": "auth0|alice001"
+        },
+        "role": {
+          "name": "developer"
+        }
+      }
+    },
+    "created_at": "2024-01-15T15:00:00Z"
+  },
+  {
+    "type": "organization.member.removed",
+    "data": {
+      "object": {
+        "organization": {
+          "id": "org_acme"
+        },
+        "user": {
+          "user_id": "auth0|bob002"
+        }
+      }
+    },
+    "created_at": "2024-01-15T16:00:00Z"
+  }
+]

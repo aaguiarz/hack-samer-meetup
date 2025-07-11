@@ -4,6 +4,8 @@ events:
     action: create
   - type: organization.member.deleted
     action: delete
+  - type: organization.member.removed
+    action: delete
 
 mappings:
   # When a member is added/deleted, create/delete the 'member' relation
